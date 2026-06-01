@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Tooling caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.streamlit/
+
+# Secrets / env (keep .env.example tracked)
+.env
+.env.*
+!.env.example
+
+# Local data (DuckDB host-mode file + backups)
+data/
+*.duckdb
+*.duckdb.wal
+_md_backup_*/
+
+# OS / editor cruft
+.DS_Store
+.claude/

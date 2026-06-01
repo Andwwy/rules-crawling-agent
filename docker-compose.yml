@@ -1,0 +1,41 @@
+# Local prototype for Rules-in-the-Wild ingestion.
+#
+# DuckDB edition: one container only. The admin process owns the DuckDB file
+# and runs the crawler in a background thread inside the same Python process
+# (DuckDB only allows one writing process per file). A named volume persists
+# the .duckdb file across restarts; `docker compose down -v` wipes it.
+#
+# For CLI work (--stats, --cluster, one-off ingest from a script), switch to
+# host mode — see README's "Quick start — host (no Docker)" section. The host
+# venv reads the same code from this repo and writes to `./data/rules.duckdb`
+# instead of the named volume.
+
+services:
+  admin:
+    build: .
+    container_name: rules_admin_ui
+    environment:
+      DUCKDB_PATH: /data/rules.duckdb
+      PERPLEXITY_API_KEY: ${PERPLEXITY_API_KEY}
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      # When MOTHERDUCK_TOKEN is set, src/db.py connects to MotherDuck cloud
+      # instead of the local /data/rules.duckdb file. Leave the env var empty
+      # to stay on the local file.
+      MOTHERDUCK_TOKEN: ${MOTHERDUCK_TOKEN:-}
+      MOTHERDUCK_DB: ${MOTHERDUCK_DB:-rules_in_the_wild}
+      motherduck_token: ${MOTHERDUCK_TOKEN:-}
+    volumes:
+      - ./src:/app/src:ro
+      - ./db:/app/db:ro
+      # Writable: the admin UI's Revise tab reads/writes the live extraction
+      # guidance doc here (guidance/guidance.md). Real file inside the repo so
+      # it's git-diffable and editable outside the app too. Version history is
+      # kept append-only in the DB (guidance_version table).
+      - ./guidance:/app/guidance
+      - duckdata:/data
+    ports:
+      - "8501:8501"
+    command: ["streamlit", "run", "src/admin_app.py", "--server.address=0.0.0.0"]
+
+volumes:
+  duckdata:
